@@ -59,6 +59,7 @@ class DiscoDemoParticle : public AmoebotParticle {
   State _state;
   int _counter;
   const int _counterMax;
+  bool changableState;
 
  private:
   friend class DiscoDemoSystem;
