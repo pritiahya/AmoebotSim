@@ -4,6 +4,7 @@
 
 #include "alg/demo/discodemo.h"
 
+// add colorChangable boolean and if we want to allow color to be changable then set it
 DiscoDemoParticle::DiscoDemoParticle(const Node& head, const int globalTailDir,
                                      const int orientation,
                                      AmoebotSystem& system,
@@ -11,18 +12,26 @@ DiscoDemoParticle::DiscoDemoParticle(const Node& head, const int globalTailDir,
     : AmoebotParticle(head, globalTailDir, orientation, system),
       _counter(counterMax),
       _counterMax(counterMax) {
-  _state = getRandColor();
+
+        // Making some permenantly blue or red 
+        int initColor = randInt(0, 3);
+        if (initColor == 0) {
+          _state = static_cast<State>(0);
+          changableState = false;
+        }
+        else if(initColor == 1) {
+          _state = static_cast<State>(4);
+          changableState = false;          
+        }
+        else {
+          _state = getRandColor();
+          changableState = true;          
+        }
+          
 }
 
 void DiscoDemoParticle::activate() {
-  // First decrement the particle's counter. If it's zero, reset the counter and
-  // get a new color.
-  _counter--;
-  if (_counter == 0) {
-    _counter = _counterMax;
-    _state = getRandColor();
-  }
-
+  
   // Next, handle movement. If the particle is contracted, choose a random
   // direction to try to expand towards, but only do so if the node in that
   // direction is unoccupied. Otherwise, if the particle is expanded, simply
@@ -30,10 +39,34 @@ void DiscoDemoParticle::activate() {
   if (isContracted()) {
     int expandDir = randDir();
     if (canExpand(expandDir)) {
+
+      // if there are no nieghbors then it can move
+      bool expandable = true;
+      for (int label : headLabels()) {
+        if (hasNbrAtLabel(label)) {
+          auto& neighbor = nbrAtLabel<DiscoDemoParticle>(label);
+          if(static_cast<int>(neighbor._state) == static_cast<int>(_state)) {
+          expandable = false;
+          changableState = false;
+          break;
+          }
+        }
+      }
+      if(expandable)
       expand(expandDir);
     }
   } else {  // isExpanded().
     contractTail();
+  }
+
+    // First decrement the particle's counter. If it's zero, reset the counter and
+  // get a new color.
+  _counter--;
+  if (_counter == 0) {
+    _counter = _counterMax;
+    if(changableState) {
+      _state = getRandColor();
+    }
   }
 }
 
@@ -89,7 +122,10 @@ DiscoDemoParticle::State DiscoDemoParticle::getRandColor() const {
 DiscoDemoSystem::DiscoDemoSystem(unsigned int numParticles, int counterMax) {
   // In order to enclose an area that's roughly 3.7x the # of particles using a
   // regular hexagon, the hexagon should have side length 1.4*sqrt(# particles).
-  int sideLen = static_cast<int>(std::round(1.4 * std::sqrt(numParticles)));
+
+  // This will change size of hex: chanding sideLen
+  //int sideLen = static_cast<int>(std::round(1.4 * std::sqrt(numParticles)));
+  int sideLen = 10;
   Node boundNode(0, 0);
   for (int dir = 0; dir < 6; ++dir) {
     for (int i = 0; i < sideLen; ++i) {
